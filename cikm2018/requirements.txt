@@ -1,0 +1,6 @@
+gensim==3.5.0
+numpy==1.14.5
+tensorflow==1.7.1
+cucco==1.1.0
+pandas==0.22.0
+nltk==3.3
