@@ -8,6 +8,7 @@ five steps:
 import re
 from string import digits
 from cucco import Cucco
+import pattern.es as lemEsp
 
 # List of number terms
 nums = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once',
@@ -39,7 +40,7 @@ class SpaPreprocessing:
         return sentence
 
     def __steaming(self, sentence):
-        return sentence
+        return ' '.join(lemEsp.Sentence(lemEsp.parse(sentence, lemmata=True)).lemmata)
 
     def __remove_number(self, sentence):
         """

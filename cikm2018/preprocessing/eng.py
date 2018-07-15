@@ -9,16 +9,17 @@ five steps:
 import re
 from string import digits
 from cucco import Cucco
+import pattern.en as lemEng
 
 # List of number terms
-nums = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
+eng_nums = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven',
         'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen',
         'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety', 'hundred',
         'thousand', 'million', 'billion', 'trillion', 'quadrillion', 'quintillion', 'sextillion',
         'septillion', 'octillion', 'nonillion', 'decillion']
 
 # from https://gist.github.com/nealrs/96342d8231b75cf4bb82
-cList = {
+eng_cList = {
   "ain't": "am not",
   "aren't": "are not",
   "can't": "cannot",
@@ -139,12 +140,7 @@ cList = {
   "you've": "you have"
 }
 
-c_re = re.compile('(%s)' % '|'.join(cList.keys()))
-
-def expandContractions(text, c_re=c_re):
-    def replace(match):
-        return cList[match.group(0)]
-    return c_re.sub(replace, text)
+eng_c_re = re.compile('(%s)' % '|'.join(eng_cList.keys()))
 
 class EngPreprocessing:
     def __init__(self):
@@ -165,10 +161,13 @@ class EngPreprocessing:
         return result
 
     def __expand_contraction(self, sentence):
-        return expandContractions(sentence)
+        def replace(match):
+            return eng_cList[match.group(0)]
+
+        return eng_c_re.sub(replace, sentence)
 
     def __steaming(self, sentence):
-        return sentence
+        return ' '.join(lemEng.Sentence(lemEng.parse(sentence, lemmata=True)).lemmata)
 
     def __remove_number(self, sentence):
         """
@@ -179,7 +178,7 @@ class EngPreprocessing:
         """
 
         query = sentence.replace('-', ' ').lower().split(' ')
-        resultwords = [word for word in query if word not in nums]
+        resultwords = [word for word in query if word not in eng_nums]
         noText = ' '.join(resultwords).encode('utf-8')
         noNums = noText.translate(None, digits).replace('  ', ' ')
 

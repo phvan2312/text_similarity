@@ -13,7 +13,7 @@ class Model:
         self.vocab_sze = vocab_size
         self.n_class = n_class
 
-    def build(self, build_session = True):
+    def build(self, build_session = True, init_word_embedding=None):
         tf.reset_default_graph()
 
         """
@@ -64,6 +64,12 @@ class Model:
 
             self.sess.run(init_op)
 
+            if init_word_embedding is not None:
+                word_emb_placeholder = tf.placeholder(dtype=tf.float32,shape=init_word_embedding.shape, name='word_emb_placeholder')
+                assign_op = tf.assign(self.sess.graph.get_tensor_by_name(name='E'), word_emb_placeholder)
+
+                self.sess.run(assign_op, feed_dict={word_emb_placeholder: init_word_embedding})
+
     def __build_matching(self, scope, n_class, reuse, input1, input2):
         last_shape = input1.get_shape().as_list()[-1]
 
@@ -104,7 +110,10 @@ class Model:
 
     def __build_embedding(self, scope, vocab_size, word_emb_dim, reuse, input):
         with tf.variable_scope(scope, reuse=reuse):
-            E = tf.get_variable(name='E',shape=[vocab_size, word_emb_dim],dtype=tf.float32, initializer=tf.contrib.layers.xavier_initializer())
+
+            E = tf.get_variable(name='E',shape=[vocab_size, word_emb_dim],dtype=tf.float32, trainable=False,
+                                initializer=tf.contrib.layers.xavier_initializer())
+
 
             output = tf.nn.embedding_lookup(E,input)
 
