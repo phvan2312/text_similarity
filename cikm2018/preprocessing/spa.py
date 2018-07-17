@@ -28,8 +28,8 @@ class SpaPreprocessing:
 
         for sentence in sentences:
             expand_contraction = self.__expand_contraction(sentence.lower())
-            steamming = self.__steaming(expand_contraction)
-            remove_number = self.__remove_number(steamming)
+            #steamming = self.__steaming(expand_contraction)
+            remove_number = self.__remove_number(expand_contraction)
             normalising = self.__normalise(remove_number)
 
             result.append(normalising)
@@ -51,9 +51,11 @@ class SpaPreprocessing:
         """
 
         query = sentence.replace('-', ' ').split(' ')
-        resultwords = [word for word in query if word not in nums]
-        noText = ' '.join(resultwords).encode('utf-8')
-        noNums = noText.translate(None, digits).replace('  ', ' ')
+        resultwords = [word.strip() for word in query if word not in nums]
+        noText = ' '.join(resultwords).encode('utf-8') # remove string number
+
+        noNums = re.sub(r"[-+]?[.\d]*[\d]+[:,.\d]*", r" ",noText) # remove numeric number
+        noNums = re.sub(r"\s\s+",r"\s",noNums)
 
         return noNums
 

@@ -1,4 +1,6 @@
 import tensorflow as tf
+from sklearn.metrics import f1_score
+import numpy as np
 
 class Model:
     def __init__(self, word_emb_dim, rnn_hid_dim, rnn_n_layers, max_sen_length, learning_rate, keep_prob
@@ -12,6 +14,60 @@ class Model:
         self.init_keep_prob = keep_prob
         self.vocab_sze = vocab_size
         self.n_class = n_class
+
+        self.training = 'training'
+        self.inference = 'inference'
+
+    def batch_run(self, batch_input, text_util, mode, init_lr = None, init_keep_prob=None, metric=f1_score):
+        assert mode in [self.training, self.inference]
+
+        """
+        create input feedict
+        """
+
+        input1, sequence_lengths1 = text_util.pad_common(sequences=[e['word_ids_1'] for e in batch_input],
+                                                         pad_tok=text_util.pad_id, max_length=self.max_sen_length)
+        input2, sequence_lengths2 = text_util.pad_common(sequences=[e['word_ids_2'] for e in batch_input],
+                                                         pad_tok=text_util.pad_id, max_length=self.max_sen_length)
+        label = [e['label'] for e in batch_input]
+
+        lr = self.init_learning_rate if init_lr is not None else init_lr
+        keep_prob = self.init_keep_prob if init_keep_prob is not None else init_keep_prob
+
+        feedict = {
+            self.input1: input1,
+            self.input2: input2,
+            self.sequence_lengths1: sequence_lengths1,
+            self.sequence_lengths2: sequence_lengths2,
+            self.label: label,
+            self.lr: lr,
+            self.keep_prob: keep_prob
+        }
+
+
+        if mode == self.inference:
+            """
+            inference
+            """
+
+            y_pred, loss = self.sess.run([self.predictions, self.loss], feed_dict=feedict)
+
+        else:
+
+            """
+            training
+            """
+
+            y_pred, loss, _ = self.sess.run([self.predictions, self.loss, self.train_op], feed_dict=feedict)
+
+        """
+        Evaluating
+        """
+        y_true = np.argmax(label, axis=1)
+
+        score = metric(y_true, y_pred)
+
+        return score, loss
 
     def build(self, build_session = True, init_word_embedding=None):
         tf.reset_default_graph()
@@ -49,7 +105,7 @@ class Model:
         buildindg matching
         """
         self.scores = self.__build_matching(scope="matching", n_class=self.n_class, reuse=False, input1=self.state1, input2=self.state2)
-
+        self.predictions = tf.arg_max(input=self.scores, dimension=1, name='predictions')
 
         """
         building loss function and training op

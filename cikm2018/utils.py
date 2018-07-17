@@ -7,7 +7,7 @@ from preprocessing.eng import EngPreprocessing
 from preprocessing.spa import SpaPreprocessing
 
 class TextUtils:
-    def __inni__(self):
+    def __init__(self):
         self.eng_preprocessing = EngPreprocessing()
         self.spa_preprocessing = SpaPreprocessing()
 
@@ -17,13 +17,15 @@ class TextUtils:
         self.word_unk = '<unk>'
         self.word_pad = '<pad>'
 
+        self.unk_id, self.pad_id = None, None
+
     def clean(self, sentences, language):
-        assert language in [self.english, self.english]
+        assert language in [self.english, self.spanish]
 
         if language == self.english: return self.eng_preprocessing.process(sentences)
         elif language == self.spanish: return self.spa_preprocessing.process(sentences)
         else:
-            raise Exception("language must be in ['spa', 'eng']")
+            raise Exception("language must be in ['spanish', 'english']")
 
     def __mapping(self, vocab):
         assert type(vocab) is dict
@@ -98,6 +100,7 @@ class TextUtils:
         for pretrain_token in pretrained_tokens:
             E_by_id[word2id[pretrain_token]] = pretrained_model[pretrain_token]
 
+        self.unk_id, self.pad_id = word2id[self.word_unk], word2id[self.word_pad]
         return (id2word, word2id), E_by_id
 
     """
@@ -145,7 +148,7 @@ class TextUtils:
     Returns:
         a list of list where each sublist has same length
     """
-    def pad_common(sequences, pad_tok, max_length):
+    def pad_common(self, sequences, pad_tok, max_length):
 
         sequence_padded, sequence_length = [], []
 
