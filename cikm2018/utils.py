@@ -5,8 +5,10 @@ from gensim.models import KeyedVectors
 import os
 from preprocessing.eng import EngPreprocessing
 from preprocessing.spa import SpaPreprocessing
+from gensim.utils import to_utf8, smart_open
 
 class TextUtils:
+
     def __init__(self):
         self.eng_preprocessing = EngPreprocessing()
         self.spa_preprocessing = SpaPreprocessing()
@@ -41,6 +43,8 @@ class TextUtils:
 
         result = []
         for sentence in clean_sentences:
+            print ("tokenizing sentence: ", sentence)
+
             tokens = nltk.word_tokenize(text=sentence,language=language)
             result.append(tokens)
 
@@ -82,12 +86,25 @@ class TextUtils:
             # load file
             pretrained_model = KeyedVectors.load_word2vec_format(fasttext_path)
 
-            # adding the new one to vocabulary
+            word_found = 0
+
+
+            # in this snippet, to save memory, we just get the embedding of the word
+            # which appear in our own vocabulary
+            # for token in word_vocab:
+            #     if token in pretrained_model.vocab:
+            #         word_found += 1
+            #         pretrained_tokens += [token]
+
             for token in pretrained_model.vocab:
                 if token in word_vocab: word_vocab[token] += 1
                 else:
+                    word_found += 1
                     word_vocab[token] = 1
                     pretrained_tokens += [token]
+
+            print ("number of word which comes from pre-trained file: ", word_found)
+            print ("cover rate: ", word_found /len(word_vocab))
 
         word_vocab[self.word_unk] = 10000001 # hard code here
         word_vocab[self.word_pad] = 10000000
@@ -100,6 +117,10 @@ class TextUtils:
         for pretrain_token in pretrained_tokens:
             E_by_id[word2id[pretrain_token]] = pretrained_model[pretrain_token]
 
+
+        print ("Vocabulary shape: ", E_by_id.shape)
+
+
         self.unk_id, self.pad_id = word2id[self.word_unk], word2id[self.word_pad]
         return (id2word, word2id), E_by_id
 
@@ -111,8 +132,8 @@ class TextUtils:
         len_label = len(label2id)
 
         for tokens_1, tokens_2, label in zip(lst_tokens_1, lst_tokens_2, labels):
-            word_ids_1 = [word2id[token if token in word2id else self.word_unk] for token in tokens_1]
-            word_ids_2 = [word2id[token if token in word2id else self.word_unk] for token in tokens_2]
+            word_ids_1 = [word2id[token.lower().strip() if token.lower().strip() in word2id else self.word_unk] for token in tokens_1]
+            word_ids_2 = [word2id[token.lower().strip() if token.lower().strip() in word2id else self.word_unk] for token in tokens_2]
 
             label_id = [0] * len_label
             label_id[label2id[label]] = 1
@@ -120,7 +141,7 @@ class TextUtils:
             data = {
                 'word_ids_1': word_ids_1,
                 'word_ids_2': word_ids_2,
-                'label_id': label_id
+                'label': label_id
             }
 
             dataset.append(data)
@@ -160,5 +181,55 @@ class TextUtils:
 
         return sequence_padded, sequence_length
 
+    """
+    save word embedding to (.vec) file  
+    """
+    def save_word_embedding(self, words, embeddings, out_path):
+        with smart_open(out_path, 'wb') as fout:
+            fout.write(to_utf8("%s %s\n" % embeddings.shape))
+
+            for index, word in enumerate(words):
+                row = embeddings[index]
+                fout.write(to_utf8("%s %s\n" % (word, ' '.join("%f" % val for val in row))))
+
 if __name__ == '__main__':
-    pass
+    import pandas as pd
+
+    """
+    Spanish
+    """
+    file_path_1 = './data/new/cikm_all_spanish.txt'
+    headers_1 = ['spa']
+
+    df_1 = pd.read_csv(file_path_1, header=None, names=headers_1, sep='\t', encoding='utf-8')
+    spa_sents = df_1.iloc[:,0].tolist()
+
+    text_util = TextUtils()
+    spa_lst_of_tokens = text_util.tokenize(sentences=spa_sents, language=text_util.spanish)
+
+    (spa_id2word, spa_word2id), spa_E_by_id = text_util.create_word_vocab(lst_tokens=spa_lst_of_tokens, word_dim=300,
+                                                                          fasttext_path='./data/pretrained/wiki.es.vec')
+
+    text_util.save_word_embedding(words=list(spa_id2word.values()), embeddings=spa_E_by_id,
+                                  out_path='./data/new/pretrained/mine.wiki.es.vec')
+
+
+    """
+    English
+    """
+
+    file_path_2 = './data/new/cikm_all_english.txt'
+    headers_2 = ['eng']
+
+    df_2 = pd.read_csv(file_path_2, header=None, names=headers_2, sep='\t', encoding='utf-8')
+    eng_sents = df_2.iloc[:, 0].tolist()
+
+    text_util = TextUtils()
+    eng_lst_of_tokens = text_util.tokenize(sentences=eng_sents, language=text_util.english)
+
+    (eng_id2word, eng_word2id), eng_E_by_id = text_util.create_word_vocab(lst_tokens=eng_lst_of_tokens, word_dim=300,
+                                                                          fasttext_path='./data/pretrained/wiki.en.vec')
+
+    text_util.save_word_embedding(words=list(eng_id2word.values()), embeddings=eng_E_by_id,
+                                  out_path='./data/new/pretrained/mine.wiki.en.vec')
+

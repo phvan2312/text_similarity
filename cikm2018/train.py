@@ -4,6 +4,7 @@ from utils import TextUtils
 from nn.model2 import Model
 
 data_path = './data/cikm_spanish_train_20180516.txt'
+data_path_2 = './data/cikm_english_train_20180516.txt'
 
 def train(train_batchs, test_batchs, n_epoch, init_lr, init_keep_prob, init_word_emb, text_util):
     """
@@ -72,10 +73,16 @@ def train(train_batchs, test_batchs, n_epoch, init_lr, init_keep_prob, init_word
 
 def main():
     text_util = TextUtils()
-    data_df = pd.read_csv(data_path,sep='\t',header=None,names=['spa_sent_1', 'eng_sent_1','spa_sent_2','eng_sent_2','label'], encoding='utf-8')
+    data_df_1 = pd.read_csv(data_path,sep='\t',header=None,names=['spa_sent_1', 'eng_sent_1','spa_sent_2','eng_sent_2','label'], encoding='utf-8')
+    data_df_2 = pd.read_csv(data_path_2,sep='\t',header=None,names=['eng_sent_1','spa_sent_1','eng_sent_2', 'spa_sent_2','label'], encoding='utf-8')
+
+    data_df = data_df_1.append(data_df_2)
 
     print ("Count None/Nan=N")
     print (data_df.isnull().sum())
+
+    print ("Number of pos/neg samples")
+    print (data_df['label'].value_counts())
 
     # split training, testing dataset
     data_legnth = data_df.shape[0]
@@ -96,7 +103,8 @@ def main():
     train_spa_tokens = train_spa_tokens_1 + train_spa_tokens_2
 
     # building vocabulary
-    (spa_id2word, spa_word2id), spa_E_by_id = text_util.create_word_vocab(lst_tokens=train_spa_tokens)
+    (spa_id2word, spa_word2id), spa_E_by_id = text_util.create_word_vocab(lst_tokens=train_spa_tokens,word_dim=300,
+                                                                          fasttext_path='./data/new/pretrained/mine.wiki.es.vec')
     (id2label, label2id) = text_util.create_label_vocab(labels=train_label_df)
 
     # builing dataset (mean convert token, label to its corressponding id)

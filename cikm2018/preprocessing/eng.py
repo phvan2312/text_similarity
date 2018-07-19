@@ -145,12 +145,14 @@ eng_c_re = re.compile('(%s)' % '|'.join(eng_cList.keys()))
 class EngPreprocessing:
     def __init__(self):
         self.norm_eng = Cucco(language='en')
-        self.norm_ops = ['remove_stop_words', 'replace_punctuation', 'remove_extra_whitespaces']
+        self.norm_ops = ['replace_punctuation', 'remove_extra_whitespaces']
 
     def process(self, sentences):
         result = []
 
         for sentence in sentences:
+            print('preprocessing sentence: ', sentence)
+
             expand_contraction = self.__expand_contraction(sentence.lower())
             steamming = self.__steaming(expand_contraction)
             remove_number = self.__remove_number(steamming)

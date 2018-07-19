@@ -110,9 +110,9 @@ class Model:
         """
         building loss function and training op
         """
-        self.loss = tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.scores,labels=self.label,name='softmax_loss')
+        self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.scores,labels=self.label),name='softmax_loss')
 
-        self.train_op = tf.train.RMSPropOptimizer(learning_rate=self.lr)
+        self.train_op = tf.train.RMSPropOptimizer(learning_rate=self.lr).minimize(self.loss)
 
         if build_session:
             self.sess = tf.Session()
@@ -122,7 +122,7 @@ class Model:
 
             if init_word_embedding is not None:
                 word_emb_placeholder = tf.placeholder(dtype=tf.float32,shape=init_word_embedding.shape, name='word_emb_placeholder')
-                assign_op = tf.assign(self.sess.graph.get_tensor_by_name(name='E'), word_emb_placeholder)
+                assign_op = tf.assign(self.sess.graph.get_tensor_by_name(name='word_embedding/E:0'), word_emb_placeholder)
 
                 self.sess.run(assign_op, feed_dict={word_emb_placeholder: init_word_embedding})
 
@@ -146,7 +146,8 @@ class Model:
             V = tf.get_variable(name='V', dtype=tf.float32, shape=[last_shape, n_class],
                                   initializer=tf.contrib.layers.xavier_initializer())
 
-            scores = tf.matmul(tf.nn.tanh(W_1 * input1 + W_2 * input2 + W_3 * subtract + W_4 * multiply), V, name='scores')
+            scores = tf.matmul(tf.nn.tanh(tf.matmul(input1,W_1) + tf.matmul(input2,W_2) + tf.matmul(subtract,W_3)
+                                          + tf.matmul(multiply,W_4)), V, name='scores')
 
             return scores
 
@@ -167,7 +168,7 @@ class Model:
     def __build_embedding(self, scope, vocab_size, word_emb_dim, reuse, input):
         with tf.variable_scope(scope, reuse=reuse):
 
-            E = tf.get_variable(name='E',shape=[vocab_size, word_emb_dim],dtype=tf.float32, trainable=False,
+            E = tf.get_variable(name='E',shape=[vocab_size, word_emb_dim],dtype=tf.float32, trainable=True,
                                 initializer=tf.contrib.layers.xavier_initializer())
 
 

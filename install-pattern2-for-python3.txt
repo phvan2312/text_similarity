@@ -1,0 +1,5 @@
+git clone -b development https://github.com/clips/pattern
+cd pattern
+sudo apt-get install mysql-server
+sudo apt-get install libmysqlclient-dev
+python setup.py install
