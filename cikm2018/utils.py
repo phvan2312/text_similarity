@@ -6,6 +6,7 @@ import os
 from preprocessing.eng import EngPreprocessing
 from preprocessing.spa import SpaPreprocessing
 from gensim.utils import to_utf8, smart_open
+from sklearn.model_selection import StratifiedShuffleSplit
 
 class TextUtils:
 
@@ -150,14 +151,28 @@ class TextUtils:
 
 
     def create_batch(self, dataset, batch_size):
+        np_dataset = np.array(dataset)
+
+        np_indexes = np.arange(0,np_dataset.shape[0],1)
+        np_labels  = np.array([ e['label'][1] for e in dataset])
+
+        n_splits = np_dataset.shape[0] // batch_size
         batch_datas = []
 
-        previous_batch_ids = range(0, len(dataset), batch_size)
-        next_batch_ids = [(i + batch_size) if (i + batch_size) < len(dataset) else len(dataset) for i in previous_batch_ids]
+        sss = StratifiedShuffleSplit(n_splits=n_splits, test_size=0.5, random_state=2312)
 
-        for s_i, e_i in zip(previous_batch_ids, next_batch_ids):
-            if e_i >= s_i:
-                batch_datas.append(dataset[s_i:e_i])
+        for train_index, test_index in sss.split(np_indexes, np_labels):
+            batch_datas.append(np_dataset[train_index].tolist()
+                               + np_dataset[test_index].tolist())
+
+        # batch_datas = []
+        #
+        # previous_batch_ids = range(0, len(dataset), batch_size)
+        # next_batch_ids = [(i + batch_size) if (i + batch_size) < len(dataset) else len(dataset) for i in previous_batch_ids]
+        #
+        # for s_i, e_i in zip(previous_batch_ids, next_batch_ids):
+        #     if e_i >= s_i:
+        #         batch_datas.append(dataset[s_i:e_i])
 
         return batch_datas
 
@@ -193,7 +208,6 @@ class TextUtils:
                 fout.write(to_utf8("%s %s\n" % (word, ' '.join("%f" % val for val in row))))
 
 if __name__ == '__main__':
-    import pandas as pd
 
     """
     Spanish

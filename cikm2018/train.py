@@ -23,7 +23,7 @@ def train(train_batchs, test_batchs, n_epoch, init_lr, init_keep_prob, init_word
     build model
     """
     model = Model(word_emb_dim=word_emb_dim, rnn_hid_dim=rnn_hid_dim, rnn_n_layers=rnn_n_layers,max_sen_length=max_sen_length,
-                  learning_rate=learning_rate,keep_prob=keep_prob,vocab_size=vocab_size,n_class=n_class)
+                  learning_rate=learning_rate,keep_prob=keep_prob,vocab_size=vocab_size,n_class=n_class, class_weights=[1,3])
 
     model.build(build_session=True,init_word_embedding=init_word_emb)
 
@@ -78,9 +78,6 @@ def main():
 
     data_df = data_df_1.append(data_df_2)
 
-    print ("Count None/Nan=N")
-    print (data_df.isnull().sum())
-
     print ("Number of pos/neg samples")
     print (data_df['label'].value_counts())
 
@@ -115,12 +112,11 @@ def main():
                                              labels=test_df['label'].tolist(), label2id=label2id, word2id=spa_word2id)
 
     # create batch
-    batch_size = 16
+    batch_size = 32
     train_batches = text_util.create_batch(dataset=train_dataset, batch_size=batch_size)
     test_batches  = text_util.create_batch(dataset=test_dataset , batch_size=batch_size)
 
     # training
-    #train(train_batchs, test_batchs, n_epoch, init_lr, init_keep_prob, init_word_emb, text_util):
     train(train_batchs=train_batches,test_batchs=test_batches,n_epoch=20,init_lr=0.001,init_keep_prob=0.9,
           init_word_emb=spa_E_by_id, text_util=text_util)
 

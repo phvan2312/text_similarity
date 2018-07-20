@@ -4,7 +4,7 @@ import numpy as np
 
 class Model:
     def __init__(self, word_emb_dim, rnn_hid_dim, rnn_n_layers, max_sen_length, learning_rate, keep_prob
-                 , vocab_size, n_class):
+                 , vocab_size, n_class, class_weights):
 
         self.word_emb_dim = word_emb_dim
         self.rnn_hid_dim = rnn_hid_dim
@@ -14,6 +14,8 @@ class Model:
         self.init_keep_prob = keep_prob
         self.vocab_sze = vocab_size
         self.n_class = n_class
+
+        self.class_weights = class_weights
 
         self.training = 'training'
         self.inference = 'inference'
@@ -111,6 +113,10 @@ class Model:
         building loss function and training op
         """
         self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.scores,labels=self.label),name='softmax_loss')
+        if self.class_weights is not None:
+            weights = tf.reduce_sum(tf.constant([self.class_weights]) * self.label, axis=1, name='weights')
+            self.loss = self.loss * weights
+            
 
         self.train_op = tf.train.RMSPropOptimizer(learning_rate=self.lr).minimize(self.loss)
 
