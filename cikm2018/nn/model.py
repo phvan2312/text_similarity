@@ -25,7 +25,7 @@ class Model:
 
         learning_rate = tf.placeholder_with_default(input=init_learing_rate,shape=[],name='learning_rate')
         keep_prob = tf.placeholder_with_default(input=init_keep_prob,shape=[],name='keep+prob') # init_keep_prob should be set to 1
-        label = tf.placeholder(name='label', shape=[None, 2], dtype=tf.float32)
+        label = tf.placeholder(name='label', shape=[None, 2], dtype=tf.int32)
 
         return spa_input_1, spa_input_2, spa_sen_length_1, spa_sen_length_2, \
                eng_input_1, eng_input_2, eng_sen_length_1, eng_sen_length_2, \

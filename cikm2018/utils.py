@@ -7,6 +7,7 @@ from preprocessing.eng import EngPreprocessing
 from preprocessing.spa import SpaPreprocessing
 from gensim.utils import to_utf8, smart_open
 from sklearn.model_selection import StratifiedShuffleSplit
+import math
 
 class TextUtils:
 
@@ -150,29 +151,43 @@ class TextUtils:
         return dataset
 
 
+    def __split_by_buckets(self, data_len, n_buckets):
+        batch_size = int (math.floor(data_len / n_buckets))
+
+        buckets = np.array([batch_size] * n_buckets)
+        data_remains = data_len - n_buckets * batch_size
+
+        buckets[np.random.permutation(range(n_buckets))[:data_remains]] += 1
+
+        indexes = [0]
+        batches = []
+        for bucket in buckets.tolist():
+            indexes += [bucket + indexes[-1]]
+            batches += [(indexes[-2], indexes[-1])]
+
+        return batches
+
+    def test_split_by_buckets(self, data_len, n_buckets):
+        return self.__split_by_buckets(data_len,n_buckets)
+
     def create_batch(self, dataset, batch_size):
         np_dataset = np.array(dataset)
 
-        np_indexes = np.arange(0,np_dataset.shape[0],1)
-        np_labels  = np.array([ e['label'][1] for e in dataset])
+        #np_indexes = np.arange(0,np_dataset.shape[0],1)
+        np_labels  = np.array([ e['label'][1] for e in dataset ])
 
-        n_splits = np_dataset.shape[0] // batch_size
+        np_1_indexes = np.where(np_labels == 1)[0]
+        np_0_indexes = np.where(np_labels == 0)[0]
+        n_splits = int(math.ceil(np_dataset.shape[0]/batch_size))
+
+        batches_1 = self.__split_by_buckets(np_1_indexes.shape[0], n_splits)
+        batches_0 = self.__split_by_buckets(np_0_indexes.shape[0], n_splits)
+
         batch_datas = []
-
-        sss = StratifiedShuffleSplit(n_splits=n_splits, test_size=0.5, random_state=2312)
-
-        for train_index, test_index in sss.split(np_indexes, np_labels):
-            batch_datas.append(np_dataset[train_index].tolist()
-                               + np_dataset[test_index].tolist())
-
-        # batch_datas = []
-        #
-        # previous_batch_ids = range(0, len(dataset), batch_size)
-        # next_batch_ids = [(i + batch_size) if (i + batch_size) < len(dataset) else len(dataset) for i in previous_batch_ids]
-        #
-        # for s_i, e_i in zip(previous_batch_ids, next_batch_ids):
-        #     if e_i >= s_i:
-        #         batch_datas.append(dataset[s_i:e_i])
+        for n_split in range(n_splits):
+            batch_data = np_dataset[ np_1_indexes[ batches_1[n_split][0]:batches_1[n_split][1] ] ].tolist() + \
+                         np_dataset[ np_0_indexes[ batches_0[n_split][0]:batches_0[n_split][1] ] ].tolist()
+            batch_datas.append(batch_data)
 
         return batch_datas
 
@@ -208,6 +223,8 @@ class TextUtils:
                 fout.write(to_utf8("%s %s\n" % (word, ' '.join("%f" % val for val in row))))
 
 if __name__ == '__main__':
+    TextUtils().test_split_by_buckets(data_len=4223, n_buckets=535)
+    exit()
 
     """
     Spanish

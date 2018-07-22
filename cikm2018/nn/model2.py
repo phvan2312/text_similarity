@@ -33,8 +33,8 @@ class Model:
                                                          pad_tok=text_util.pad_id, max_length=self.max_sen_length)
         label = [e['label'] for e in batch_input]
 
-        lr = self.init_learning_rate if init_lr is not None else init_lr
-        keep_prob = self.init_keep_prob if init_keep_prob is not None else init_keep_prob
+        lr = self.init_learning_rate if init_lr is None else init_lr
+        keep_prob = self.init_keep_prob if init_keep_prob is None else init_keep_prob
 
         feedict = {
             self.input1: input1,
@@ -112,11 +112,12 @@ class Model:
         """
         building loss function and training op
         """
-        self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.scores,labels=self.label),name='softmax_loss')
+        self.loss = tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.scores,labels=self.label, name='softmax_loss')
         if self.class_weights is not None:
             weights = tf.reduce_sum(tf.constant([self.class_weights]) * self.label, axis=1, name='weights')
             self.loss = self.loss * weights
-            
+
+        self.loss = tf.reduce_mean(self.loss)
 
         self.train_op = tf.train.RMSPropOptimizer(learning_rate=self.lr).minimize(self.loss)
 
