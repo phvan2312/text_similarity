@@ -4,7 +4,7 @@ import numpy as np
 
 class Model:
     def __init__(self, word_emb_dim, rnn_hid_dim, rnn_n_layers, max_sen_length, learning_rate, keep_prob
-                 , vocab_size, n_class, class_weights):
+                 , vocab_size, n_class, class_weights, word2id, label2id):
 
         self.word_emb_dim = word_emb_dim
         self.rnn_hid_dim = rnn_hid_dim
@@ -19,9 +19,13 @@ class Model:
 
         self.training = 'training'
         self.inference = 'inference'
+        self.get_score_only = 'score_only'
+
+        self.word2id  = word2id
+        self.label2id = label2id
 
     def batch_run(self, batch_input, text_util, mode, init_lr = None, init_keep_prob=None, metric=f1_score):
-        assert mode in [self.training, self.inference]
+        assert mode in [self.training, self.inference, self.get_score_only]
 
         """
         create input feedict
@@ -51,16 +55,23 @@ class Model:
             """
             inference
             """
-
+            feedict[self.keep_prob] = 1.0
             y_pred, loss = self.sess.run([self.predictions, self.loss], feed_dict=feedict)
 
-        else:
-
+        elif mode == self.training:
             """
             training
             """
 
             y_pred, loss, _ = self.sess.run([self.predictions, self.loss, self.train_op], feed_dict=feedict)
+
+        elif mode == self.get_score_only:
+            """
+            score only
+            """
+            feedict[self.keep_prob] = 1.0
+            score_probs = self.sess.run(tf.nn.softmax(self.scores),feed_dict=feedict)
+            return score_probs
 
         """
         Evaluating
@@ -70,6 +81,12 @@ class Model:
         score = metric(y_true, y_pred)
 
         return score, loss
+
+    def save(self, save_path):
+        self.saver.save(self.sess, save_path)
+
+    def restore(self, save_path):
+        self.saver.restore(self.sess, save_path)
 
     def build(self, build_session = True, init_word_embedding=None):
         tf.reset_default_graph()
@@ -123,6 +140,8 @@ class Model:
 
         if build_session:
             self.sess = tf.Session()
+            self.saver = tf.train.Saver()
+
             init_op = tf.global_variables_initializer()
 
             self.sess.run(init_op)

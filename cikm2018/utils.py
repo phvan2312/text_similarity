@@ -45,9 +45,9 @@ class TextUtils:
 
         result = []
         for sentence in clean_sentences:
-            print ("tokenizing sentence: ", sentence)
+            #print ("tokenizing sentence: ", sentence)
 
-            tokens = nltk.word_tokenize(text=sentence,language=language)
+            tokens = nltk.word_tokenize(text=sentence,language=language) #sentence.split(" ")
             result.append(tokens)
 
         return result
@@ -77,6 +77,8 @@ class TextUtils:
                 if token in word_vocab: word_vocab[token] += 1
                 else: word_vocab[token] = 1
 
+        num_words = len(word_vocab)
+
         "Now we have to load word in the pretrained file one"
         pretrained_tokens = []
         pretrained_model = None
@@ -90,7 +92,7 @@ class TextUtils:
 
             word_found = 0
 
-
+            # USE IT WHEN YOU WANT TO CREATE SUB WORD EMBEDDINGS
             # in this snippet, to save memory, we just get the embedding of the word
             # which appear in our own vocabulary
             # for token in word_vocab:
@@ -98,15 +100,16 @@ class TextUtils:
             #         word_found += 1
             #         pretrained_tokens += [token]
 
+            # USE IT WHEN YOU WANT TO USE WORD EMBEDDINGS
             for token in pretrained_model.vocab:
-                if token in word_vocab: word_vocab[token] += 1
-                else:
+                pretrained_tokens += [token]
+                if token in word_vocab:
                     word_found += 1
+                    word_vocab[token] += 1
+                else:
                     word_vocab[token] = 1
-                    pretrained_tokens += [token]
 
-            print ("number of word which comes from pre-trained file: ", word_found)
-            print ("cover rate: ", word_found /len(word_vocab))
+            print ("number of word which comes from pre-trained file: ", word_found, '/', num_words)
 
         word_vocab[self.word_unk] = 10000001 # hard code here
         word_vocab[self.word_pad] = 10000000
@@ -119,9 +122,7 @@ class TextUtils:
         for pretrain_token in pretrained_tokens:
             E_by_id[word2id[pretrain_token]] = pretrained_model[pretrain_token]
 
-
         print ("Vocabulary shape: ", E_by_id.shape)
-
 
         self.unk_id, self.pad_id = word2id[self.word_unk], word2id[self.word_pad]
         return (id2word, word2id), E_by_id
@@ -223,8 +224,12 @@ class TextUtils:
                 fout.write(to_utf8("%s %s\n" % (word, ' '.join("%f" % val for val in row))))
 
 if __name__ == '__main__':
-    TextUtils().test_split_by_buckets(data_len=4223, n_buckets=535)
-    exit()
+
+    # """
+    # Test split by buckets
+    # """
+    # TextUtils().test_split_by_buckets(data_len=4223, n_buckets=535)
+    # exit()
 
     """
     Spanish
@@ -241,10 +246,11 @@ if __name__ == '__main__':
     (spa_id2word, spa_word2id), spa_E_by_id = text_util.create_word_vocab(lst_tokens=spa_lst_of_tokens, word_dim=300,
                                                                           fasttext_path='./data/pretrained/wiki.es.vec')
 
-    text_util.save_word_embedding(words=list(spa_id2word.values()), embeddings=spa_E_by_id,
-                                  out_path='./data/new/pretrained/mine.wiki.es.vec')
+    # text_util.save_word_embedding(words=list(spa_id2word.values()), embeddings=spa_E_by_id,
+    #                               out_path='./data/new/pretrained/mine.wiki.es.vec')
 
 
+    exit()
     """
     English
     """
@@ -256,6 +262,7 @@ if __name__ == '__main__':
     eng_sents = df_2.iloc[:, 0].tolist()
 
     text_util = TextUtils()
+
     eng_lst_of_tokens = text_util.tokenize(sentences=eng_sents, language=text_util.english)
 
     (eng_id2word, eng_word2id), eng_E_by_id = text_util.create_word_vocab(lst_tokens=eng_lst_of_tokens, word_dim=300,

@@ -27,7 +27,7 @@ class SpaPreprocessing:
         result = []
 
         for sentence in sentences:
-            print ('preprocessing sentence: ', sentence)
+            #print ('preprocessing sentence: ', sentence)
 
             expand_contraction = self.__expand_contraction(sentence.lower())
             steamming = self.__steaming(expand_contraction)
