@@ -70,6 +70,7 @@ class Model:
             score only
             """
             feedict[self.keep_prob] = 1.0
+
             score_probs = self.sess.run(tf.nn.softmax(self.scores),feed_dict=feedict)
             return score_probs
 
@@ -119,6 +120,9 @@ class Model:
 
         self.state1 = tf.concat([self.states_fw1[-1], self.states_bw1[-1]], axis=1)
         self.state2 = tf.concat([self.states_fw2[-1], self.states_bw2[-1]], axis=1)
+
+        self.state1 = tf.nn.dropout(self.state1, keep_prob=self.keep_prob)
+        self.state2 = tf.nn.dropout(self.state2, keep_prob=self.keep_prob)
 
         """
         buildindg matching

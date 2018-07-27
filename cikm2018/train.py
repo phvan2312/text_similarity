@@ -13,7 +13,7 @@ Some global parameters
 """
 data_path = './data/cikm_spanish_train_20180516.txt'
 data_path_2 = './data/cikm_english_train_20180516.txt'
-n_epoch = 25
+n_epoch = 40
 init_lr = 0.001
 init_keep_prob = 0.8
 save_path = "./saved/24072018/"
@@ -168,7 +168,7 @@ def main():
     data_df_indexes = np.arange(0, data_df.shape[0])
     data_df_labels  = np.array(data_df['label'].tolist())
 
-    ids_train, ids_test, _, _ = train_test_split(data_df_indexes, data_df_labels, test_size=0.2, random_state=2312, stratify=data_df_labels)
+    ids_train, ids_test, _, _ = train_test_split(data_df_indexes, data_df_labels, test_size=0.1, random_state=2312, stratify=data_df_labels)
     train_df, test_df = data_df.iloc[ids_train], data_df.iloc[ids_test]
 
     save_model_class = os.path.join(save_path, "model.pkl")
