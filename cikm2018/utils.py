@@ -8,6 +8,7 @@ from preprocessing.spa import SpaPreprocessing
 from gensim.utils import to_utf8, smart_open
 from sklearn.model_selection import StratifiedShuffleSplit
 import math
+from sklearn.utils import shuffle
 
 class TextUtils:
 
@@ -130,13 +131,13 @@ class TextUtils:
     """
     create dataset
     """
-    def create_dataset(self, lst_tokens_1, lst_tokens_2, labels, word2id, label2id):
+    def create_dataset(self, lst_tokens_1, lst_tokens_2, labels, word2id_1, word2id_2, label2id):
         dataset = []
         len_label = len(label2id)
 
         for tokens_1, tokens_2, label in zip(lst_tokens_1, lst_tokens_2, labels):
-            word_ids_1 = [word2id[token.lower().strip() if token.lower().strip() in word2id else self.word_unk] for token in tokens_1]
-            word_ids_2 = [word2id[token.lower().strip() if token.lower().strip() in word2id else self.word_unk] for token in tokens_2]
+            word_ids_1 = [word2id_1[token.lower().strip() if token.lower().strip() in word2id_1 else self.word_unk] for token in tokens_1]
+            word_ids_2 = [word2id_2[token.lower().strip() if token.lower().strip() in word2id_2 else self.word_unk] for token in tokens_2]
 
             label_id = [0] * len_label
             label_id[label2id[label]] = 1
@@ -223,51 +224,101 @@ class TextUtils:
                 row = embeddings[index]
                 fout.write(to_utf8("%s %s\n" % (word, ' '.join("%f" % val for val in row))))
 
+    """
+    
+    """
+
+
 if __name__ == '__main__':
+    #
+    # # """
+    # # Test split by buckets
+    # # """
+    # # TextUtils().test_split_by_buckets(data_len=4223, n_buckets=535)
+    # # exit()
+    #
+
+    ##################################################################################################################
 
     # """
-    # Test split by buckets
+    # Spanish
     # """
-    # TextUtils().test_split_by_buckets(data_len=4223, n_buckets=535)
-    # exit()
+    # file_path_1 = './data/new/cikm_all_spanish.txt'
+    # headers_1 = ['spa']
+    #
+    # df_1 = pd.read_csv(file_path_1, header=None, names=headers_1, sep='\t', encoding='utf-8')
+    # spa_sents = df_1.iloc[:,0].tolist()
+    #
+    # text_util = TextUtils()
+    # spa_lst_of_tokens = text_util.tokenize(sentences=spa_sents, language=text_util.spanish)
+    #
+    # (spa_id2word, spa_word2id), spa_E_by_id = text_util.create_word_vocab(lst_tokens=spa_lst_of_tokens, word_dim=300,
+    #                                                                       fasttext_path='./data/pretrained/wiki.es.vec')
+    #
+    # # text_util.save_word_embedding(words=list(spa_id2word.values()), embeddings=spa_E_by_id,
+    # #                               out_path='./data/new/pretrained/mine.wiki.es.vec')
 
-    """
-    Spanish
-    """
-    file_path_1 = './data/new/cikm_all_spanish.txt'
-    headers_1 = ['spa']
+    ##################################################################################################################
 
-    df_1 = pd.read_csv(file_path_1, header=None, names=headers_1, sep='\t', encoding='utf-8')
-    spa_sents = df_1.iloc[:,0].tolist()
+    # """
+    # English
+    # """
+    #
+    # file_path_2 = './data/new/cikm_all_english.txt'
+    # headers_2 = ['eng']
+    #
+    # df_2 = pd.read_csv(file_path_2, header=None, names=headers_2, sep='\t', encoding='utf-8')
+    # eng_sents = df_2.iloc[:, 0].tolist()
+    #
+    # text_util = TextUtils()
+    #
+    # eng_lst_of_tokens = text_util.tokenize(sentences=eng_sents, language=text_util.english)
+    #
+    # (eng_id2word, eng_word2id), eng_E_by_id = text_util.create_word_vocab(lst_tokens=eng_lst_of_tokens, word_dim=300,
+    #                                                                       fasttext_path='./data/pretrained/wiki.en.vec')
+    #
+    # text_util.save_word_embedding(words=list(eng_id2word.values()), embeddings=eng_E_by_id,
+    #                               out_path='./data/new/pretrained/mine.wiki.en.vec')
 
-    text_util = TextUtils()
-    spa_lst_of_tokens = text_util.tokenize(sentences=spa_sents, language=text_util.spanish)
+    ##################################################################################################################
 
-    (spa_id2word, spa_word2id), spa_E_by_id = text_util.create_word_vocab(lst_tokens=spa_lst_of_tokens, word_dim=300,
-                                                                          fasttext_path='./data/pretrained/wiki.es.vec')
+    print('a')
+    file_path_1 = './data/cikm_english_train_20180516.txt'
+    headers_1 = ['eng_1', 'spa_1', 'eng_2', 'spa_2', 'label']
+    df_1 = pd.read_csv(file_path_1, sep='\t', header=None, names=headers_1, encoding='utf-8')
 
-    # text_util.save_word_embedding(words=list(spa_id2word.values()), embeddings=spa_E_by_id,
-    #                               out_path='./data/new/pretrained/mine.wiki.es.vec')
+    file_path_2 = './data/cikm_spanish_train_20180516.txt'
+    headers_2 = ['spa_1', 'eng_1', 'spa_2', 'eng_2', 'label']
+    df_2 = pd.read_csv(file_path_2, sep='\t', header=None, names=headers_2, encoding='utf-8')
+
+    file_path_3 = "./data/cikm_unlabel_spanish_train_20180516.txt"
+    headers_3 = ['spa_1', 'eng_1']
+    df_3 = pd.read_csv(file_path_3, sep='\t', header=None, names=headers_3, encoding='utf-8')
+
+    df = pd.DataFrame()
+    # create positive samples
+    print('c')
+    df['spa'] = df_1['spa_1'].tolist() + df_1['spa_2'].tolist() + df_2['spa_1'].tolist() + df_2['spa_2'].tolist() + \
+                df_3['spa_1'].tolist()
+    df['eng'] = df_1['eng_1'].tolist() + df_1['eng_2'].tolist() + df_2['eng_1'].tolist() + df_2['eng_2'].tolist() + \
+                df_3['eng_1'].tolist()
+    df['label'] = (df_1.shape[0] * 2 + df_2.shape[0] * 2 + df_3.shape[0]) * [1.0]   # all is positive samples
+
+    # create negative samples
+    random_indexs_1 = np.random.permutation(range(df.shape[0]))
+    random_indexs_2 = np.random.permutation(range(df.shape[0]))
+
+    df = df.append(pd.DataFrame({
+        "spa":df['spa'].iloc[random_indexs_1].tolist(),
+        "eng":df['eng'].iloc[random_indexs_1].tolist(),
+        "label":[0.0 if index_1 != index_2 else 1.0 for (index_1, index_2) in zip(random_indexs_1, random_indexs_2)]
+    }),ignore_index=True)
+
+    df.reindex(np.random.permutation(df.index)).to_csv("./data/new/pair.txt", sep='\t', columns=['spa','eng','label'], index=None, encoding='utf-8')
 
 
-    exit()
-    """
-    English
-    """
 
-    file_path_2 = './data/new/cikm_all_english.txt'
-    headers_2 = ['eng']
 
-    df_2 = pd.read_csv(file_path_2, header=None, names=headers_2, sep='\t', encoding='utf-8')
-    eng_sents = df_2.iloc[:, 0].tolist()
 
-    text_util = TextUtils()
 
-    eng_lst_of_tokens = text_util.tokenize(sentences=eng_sents, language=text_util.english)
-
-    (eng_id2word, eng_word2id), eng_E_by_id = text_util.create_word_vocab(lst_tokens=eng_lst_of_tokens, word_dim=300,
-                                                                          fasttext_path='./data/pretrained/wiki.en.vec')
-
-    text_util.save_word_embedding(words=list(eng_id2word.values()), embeddings=eng_E_by_id,
-                                  out_path='./data/new/pretrained/mine.wiki.en.vec')
 

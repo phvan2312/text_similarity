@@ -1,11 +1,11 @@
 import pandas as pd
 import tensorflow as tf
-from nn.model2 import Model
+from nn.similarNN import Model
 import _pickle as cPickle
 from utils import TextUtils
 
-save_model_class = './saved/model2/model.pkl'
-save_model_deep  = './saved/model2/model.ckpt'
+save_model_class = './saved/24072018/model.pkl'
+save_model_deep  = './saved/24072018/model.ckpt'
 
 data_file_path   = './data/cikm_test_a_20180516.txt'
 data_file_headers= ['spa_sent_1', 'spa_sent_2']
@@ -35,7 +35,8 @@ if __name__ == '__main__':
     eval_spa_tokens_2 = text_util.tokenize(sentences=data_df['spa_sent_2'].tolist(), language=text_util.spanish)
 
     dataset = text_util.create_dataset(lst_tokens_1=eval_spa_tokens_1,lst_tokens_2=eval_spa_tokens_2,
-                                       labels=[0] * data_df.shape[0], word2id=model.word2id, label2id=model.label2id)
+                                       labels=[0] * data_df.shape[0], word2id_1=model.word2id, word2id_2=model.word2id,
+                                       label2id=model.label2id)
 
 
     """

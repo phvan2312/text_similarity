@@ -180,9 +180,11 @@ class EngPreprocessing:
         """
 
         query = sentence.replace('-', ' ').lower().split(' ')
-        resultwords = [word for word in query if word not in eng_nums]
-        noText = ' '.join(resultwords).encode('utf-8')
-        noNums = noText.translate(None, digits).replace('  ', ' ')
+        resultwords = [word.strip() for word in query if word not in eng_nums]
+        noText = ' '.join(resultwords)
+
+        noNums = re.sub(r"[-+]?[.\d]*[\d]+[:,.\d]*", r" ", noText)  # remove numeric number
+        noNums = re.sub(r"\s\s+", r"\s", noNums)
 
         return noNums
 
